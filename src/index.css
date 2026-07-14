@@ -1,0 +1,110 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: #f8fafc;
+    color: #0f172a;
+  }
+
+  #root {
+    min-height: 100vh;
+  }
+}
+
+@layer components {
+  .sidebar-link {
+    @apply flex items-center gap-3 px-4 py-2.5 rounded-lg text-gray-600 hover:bg-purple-50 hover:text-purple-700 transition-all duration-200 cursor-pointer;
+  }
+
+  .sidebar-link.active {
+    @apply bg-purple-50 text-purple-700 font-medium;
+  }
+
+  .stat-card {
+    @apply bg-white p-5 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all duration-200;
+  }
+
+  .status-badge {
+    @apply px-2.5 py-1 rounded-full text-xs font-medium;
+  }
+
+  .status-badge.in-stock {
+    @apply bg-green-100 text-green-700;
+  }
+
+  .status-badge.low-stock {
+    @apply bg-yellow-100 text-yellow-700;
+  }
+
+  .status-badge.out-of-stock {
+    @apply bg-red-100 text-red-700;
+  }
+
+  .status-badge.published {
+    @apply bg-green-100 text-green-700;
+  }
+
+  .status-badge.hidden {
+    @apply bg-gray-100 text-gray-600;
+  }
+
+  .btn-primary {
+    @apply px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-all duration-200 font-medium text-sm;
+  }
+
+  .btn-secondary {
+    @apply px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-all duration-200 font-medium text-sm;
+  }
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out forwards;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c4b5fd;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #8b5cf6;
+}
+
+/* Modal overlay */
+.modal-overlay {
+  background: rgba(15, 23, 42, 0.5);
+  backdrop-filter: blur(4px);
+}
