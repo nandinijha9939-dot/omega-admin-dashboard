@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { FaBars, FaBell, FaSearch } from 'react-icons/fa'
 import { useAuth } from '../../context/AuthContext'
@@ -23,7 +23,7 @@ const Topbar = ({ onMenuClick }) => {
     return 'Dashboard'
   }
 
-  const handleSearch = (e) => {
+  const handleSearch = useCallback((e) => {
     const value = e.target.value
     setSearch(value)
     if (value.trim()) {
@@ -31,7 +31,7 @@ const Topbar = ({ onMenuClick }) => {
     } else {
       navigate('/products')
     }
-  }
+  }, [navigate])
 
   useEffect(() => {
     const params = new URLSearchParams(location.search)
@@ -40,6 +40,19 @@ const Topbar = ({ onMenuClick }) => {
       setSearch(searchQuery)
     }
   }, [location.search])
+
+  // Keyboard shortcut: Ctrl+K to focus search
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault()
+        const searchInput = document.querySelector('input[type="text"]')
+        if (searchInput) searchInput.focus()
+      }
+    }
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [])
 
   const handleNotificationClick = () => {
     setShowNotifications(!showNotifications)
@@ -50,17 +63,14 @@ const Topbar = ({ onMenuClick }) => {
     }
   }
 
-  // Different notifications for Admin vs User
   const getNotifications = () => {
     if (isAdmin) {
-      // Admin notifications - business/management related
       return [
         {
           id: 1,
           title: 'New order received',
           description: 'Order #ORD-0042 from John Doe',
           time: '2 min ago',
-          type: 'admin',
           color: 'bg-green-500'
         },
         {
@@ -68,7 +78,6 @@ const Topbar = ({ onMenuClick }) => {
           title: 'Product review',
           description: 'New 5-star review on "iPhone 13"',
           time: '15 min ago',
-          type: 'admin',
           color: 'bg-blue-500'
         },
         {
@@ -76,19 +85,16 @@ const Topbar = ({ onMenuClick }) => {
           title: 'Low stock alert',
           description: '"Smart Watch" only 3 left in stock',
           time: '1 hour ago',
-          type: 'admin',
           color: 'bg-yellow-500'
         }
       ]
     } else {
-      // User notifications - customer related
       return [
         {
           id: 1,
           title: 'Your order is out for delivery!',
           description: 'Order #ORD-0023 will arrive today',
           time: '1 hour ago',
-          type: 'user',
           color: 'bg-green-500'
         },
         {
@@ -96,7 +102,6 @@ const Topbar = ({ onMenuClick }) => {
           title: 'Price drop alert!',
           description: 'iPhone 15 Pro is now ₹89,999',
           time: '3 hours ago',
-          type: 'user',
           color: 'bg-blue-500'
         },
         {
@@ -104,16 +109,7 @@ const Topbar = ({ onMenuClick }) => {
           title: 'New product recommendation',
           description: 'Check out the new Samsung Galaxy S24',
           time: '5 hours ago',
-          type: 'user',
           color: 'bg-purple-500'
-        },
-        {
-          id: 4,
-          title: 'Flash sale starting soon!',
-          description: 'Up to 70% off on electronics',
-          time: '1 day ago',
-          type: 'user',
-          color: 'bg-orange-500'
         }
       ]
     }
@@ -145,7 +141,7 @@ const Topbar = ({ onMenuClick }) => {
           <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
           <input
             type="text"
-            placeholder="Search products..."
+            placeholder="Search products... (⌘K)"
             value={search}
             onChange={handleSearch}
             className="pl-9 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent w-48 lg:w-64 transition-all"
@@ -169,9 +165,6 @@ const Topbar = ({ onMenuClick }) => {
             {user?.name?.[0] || 'U'}
           </div>
           <span className="text-sm font-medium hidden md:block">{user?.name}</span>
-          <span className="text-xs text-gray-400 hidden lg:block">
-            {isAdmin ? '(Admin)' : ''}
-          </span>
         </div>
       </div>
 
@@ -201,11 +194,6 @@ const Topbar = ({ onMenuClick }) => {
                   <p className="text-xs text-gray-500">{notif.description}</p>
                   <p className="text-xs text-gray-400 mt-1">{notif.time}</p>
                 </div>
-                {isAdmin && (
-                  <button className="text-xs text-purple-600 hover:text-purple-700 font-medium opacity-0 group-hover:opacity-100 transition">
-                    View
-                  </button>
-                )}
               </div>
             ))}
           </div>

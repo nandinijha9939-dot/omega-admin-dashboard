@@ -16,8 +16,8 @@ const Login = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 via-white to-indigo-50 p-4">
       <div className="bg-white rounded-2xl shadow-2xl p-8 md:p-10 w-full max-w-md border border-gray-100">
-        {/* Logo - Amazon/Flipkart style */}
-        <div className="text-center mb-8">
+        {/* Logo */}
+        <div className="text-center mb-6">
           <div className="w-20 h-20 bg-gradient-to-br from-purple-600 to-indigo-600 rounded-2xl mx-auto flex items-center justify-center text-white text-4xl font-bold shadow-lg shadow-purple-200">
             Ω
           </div>
@@ -25,7 +25,17 @@ const Login = () => {
           <p className="text-gray-500 text-sm">Choose your experience</p>
         </div>
 
-        {/* Role Selection - Flipkart/Amazon style */}
+        {/* Demo Credentials Badge */}
+        <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 mb-6">
+          <div className="flex items-center gap-2 text-xs text-blue-700">
+            <span className="font-semibold">🔑 Demo:</span>
+            <span className="bg-blue-100 px-2 py-0.5 rounded">Admin: admin</span>
+            <span className="bg-blue-100 px-2 py-0.5 rounded">User: user</span>
+            <span className="text-blue-500 text-[10px]">(No password)</span>
+          </div>
+        </div>
+
+        {/* Role Selection */}
         <div className="grid grid-cols-2 gap-4 mb-6">
           <button
             onClick={() => setRole('user')}
@@ -70,7 +80,7 @@ const Login = () => {
           </button>
         </div>
 
-        {/* Features preview - Amazon style */}
+        {/* Features preview */}
         <div className="bg-gray-50 rounded-xl p-4 mb-6 border border-gray-100">
           <div className="flex items-center gap-3 text-sm text-gray-600">
             <FaShoppingBag className="text-purple-500 text-lg" />
@@ -87,7 +97,6 @@ const Login = () => {
           </div>
         </div>
 
-        {/* Login Button - Amazon/Flipkart style */}
         <button
           onClick={handleLogin}
           className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 text-white py-3.5 rounded-xl font-semibold hover:shadow-lg hover:shadow-purple-200 transition-all flex items-center justify-center gap-2 hover:scale-[1.02]"
@@ -96,12 +105,11 @@ const Login = () => {
           <FaArrowRight className="text-sm" />
         </button>
 
-        {/* Footer */}
         <p className="text-center text-xs text-gray-400 mt-4">
           By continuing, you agree to our Terms of Service
         </p>
 
-        {/* Trust badges - Amazon style */}
+        {/* Trust badges */}
         <div className="mt-6 flex justify-center gap-6 text-xs text-gray-400">
           <span>🔒 Secure</span>
           <span>⚡ Fast</span>

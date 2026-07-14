@@ -9,14 +9,13 @@ const MyOrdersPage = () => {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Generate mock orders for the current user
     const generateOrders = async () => {
       try {
         const productRes = await axios.get('https://dummyjson.com/products?limit=30')
         const products = productRes.data.products
         
         const statuses = ['delivered', 'shipped', 'processing', 'pending']
-        const orderCount = Math.floor(Math.random() * 5) + 2 // 2-6 orders
+        const orderCount = Math.floor(Math.random() * 5) + 2
         
         const userOrders = Array.from({ length: orderCount }, (_, i) => {
           const numItems = Math.floor(Math.random() * 3) + 1
@@ -92,7 +91,6 @@ const MyOrdersPage = () => {
 
   return (
     <div className="max-w-6xl mx-auto">
-      {/* Header - Amazon style */}
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
@@ -105,11 +103,6 @@ const MyOrdersPage = () => {
             {orders.length} orders placed
           </p>
         </div>
-        <div className="flex items-center gap-2 text-sm">
-          <span className="px-3 py-1 bg-blue-50 text-blue-700 rounded-full">
-            {user?.name}'s Account
-          </span>
-        </div>
       </div>
 
       {orders.length === 0 ? (
@@ -117,9 +110,6 @@ const MyOrdersPage = () => {
           <div className="text-6xl mb-4">📦</div>
           <h3 className="text-lg font-semibold text-gray-900">No orders yet</h3>
           <p className="text-gray-500 text-sm">Start shopping to see your orders here</p>
-          <button className="mt-4 px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition">
-            Start Shopping
-          </button>
         </div>
       ) : (
         <div className="space-y-4">
@@ -127,7 +117,6 @@ const MyOrdersPage = () => {
             const status = getStatusConfig(order.status)
             return (
               <div key={order.id} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition">
-                {/* Order Header - Amazon style */}
                 <div className="bg-gray-50 px-6 py-3 border-b border-gray-200 flex flex-wrap items-center justify-between gap-2">
                   <div className="flex items-center gap-6 text-sm">
                     <span className="text-gray-500">Order #{order.id}</span>
@@ -137,13 +126,7 @@ const MyOrdersPage = () => {
                       {status.label}
                     </span>
                   </div>
-                  <button className="text-sm text-purple-600 hover:text-purple-700 font-medium flex items-center gap-1">
-                    <FaEye className="w-4 h-4" />
-                    View Details
-                  </button>
                 </div>
-
-                {/* Order Items - Amazon style */}
                 <div className="p-4">
                   <div className="space-y-3">
                     {order.items.map((item, idx) => (
@@ -158,20 +141,16 @@ const MyOrdersPage = () => {
                           <div className="flex items-center gap-3 text-xs text-gray-500 mt-1">
                             <span>Qty: {item.quantity}</span>
                             <span>₹{Math.round(item.price * 83)}</span>
-                            <span className="text-green-600">In Stock</span>
                           </div>
                         </div>
                         <div className="text-right">
                           <div className="font-semibold text-gray-900">
                             ₹{Math.round(item.subtotal * 83)}
                           </div>
-                          <div className="text-xs text-gray-400">Free delivery</div>
                         </div>
                       </div>
                     ))}
                   </div>
-
-                  {/* Order Total - Flipkart style */}
                   <div className="mt-4 pt-4 border-t border-gray-200 flex justify-between items-center">
                     <div className="text-sm text-gray-500">
                       Estimated Delivery: <span className="font-medium text-gray-900">{order.estimatedDelivery}</span>

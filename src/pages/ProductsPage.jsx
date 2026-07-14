@@ -1,8 +1,13 @@
-import React, { useState, useEffect, useMemo } from 'react'
+import React, { useState, useEffect, useMemo, useCallback, Suspense } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import axios from 'axios'
 import { useAuth } from '../context/AuthContext'
 import { FaStar, FaStarHalfAlt, FaRegStar, FaShoppingCart, FaHeart } from 'react-icons/fa'
+import toast from 'react-hot-toast'
+import CountUp from 'react-countup'
+import ProductSkeleton from '../components/Common/ProductSkeleton'
+import EmptyState from '../components/Common/EmptyState'
+import Breadcrumb from '../components/Common/Breadcrumb'
 
 const ProductsPage = () => {
   const [products, setProducts] = useState([])
@@ -11,30 +16,35 @@ const ProductsPage = () => {
   const { isAdmin } = useAuth()
   const navigate = useNavigate()
 
-  // Get filters from URL
   const categoryFromURL = searchParams.get('category') || ''
   const searchFromURL = searchParams.get('search') || ''
 
   const [search, setSearch] = useState(searchFromURL)
   const [category, setCategory] = useState(categoryFromURL)
   const [sortBy, setSortBy] = useState('popular')
+  const [currentPage, setCurrentPage] = useState(1)
+  const pageSize = 12
 
   useEffect(() => {
-    axios.get('https://dummyjson.com/products?limit=100')
-      .then(res => {
-        setProducts(res.data.products.map(p => ({ ...p, published: true })))
+    const fetchProducts = async () => {
+      try {
+        setLoading(true)
+        const response = await axios.get('https://dummyjson.com/products?limit=100')
+        // Add published flag to all products
+        const productsWithPublished = response.data.products.map(p => ({
+          ...p,
+          published: true
+        }))
+        setProducts(productsWithPublished)
+      } catch (error) {
+        console.error('Failed to fetch products:', error)
+        toast.error('Failed to load products')
+      } finally {
         setLoading(false)
-      })
-      .catch(() => setLoading(false))
+      }
+    }
+    fetchProducts()
   }, [])
-
-  // Update URL when category or search changes
-  useEffect(() => {
-    const params = new URLSearchParams()
-    if (category) params.set('category', category)
-    if (search) params.set('search', search)
-    setSearchParams(params, { replace: true })
-  }, [category, search, setSearchParams])
 
   const filtered = useMemo(() => {
     let result = [...products]
@@ -53,7 +63,7 @@ const ProductsPage = () => {
       )
     }
     
-    // Category filter - IMPORTANT: This is the fix
+    // Category filter
     if (category) {
       result = result.filter(p => p.category.toLowerCase() === category.toLowerCase())
     }
@@ -79,9 +89,27 @@ const ProductsPage = () => {
     return result
   }, [products, search, category, sortBy, isAdmin])
 
+  // Update URL
+  useEffect(() => {
+    const params = new URLSearchParams()
+    if (category) params.set('category', category)
+    if (search) params.set('search', search)
+    setSearchParams(params, { replace: true })
+  }, [category, search, setSearchParams])
+
+  const totalPages = Math.ceil(filtered.length / pageSize)
+  const paginatedProducts = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize)
+
   const categories = [...new Set(products.map(p => p.category))]
 
-  // Rating stars component
+  // Stats for admin
+  const stats = useMemo(() => {
+    const total = filtered.length
+    const avgRating = total > 0 ? filtered.reduce((s, p) => s + p.rating, 0) / total : 0
+    const totalValue = filtered.reduce((s, p) => s + p.price * p.stock, 0)
+    return { total, avgRating, totalValue }
+  }, [filtered])
+
   const renderStars = (rating) => {
     const full = Math.floor(rating)
     const half = rating % 1 >= 0.5 ? 1 : 0
@@ -95,22 +123,81 @@ const ProductsPage = () => {
     )
   }
 
-  // Clear category filter
-  const clearCategoryFilter = () => {
+  // Highlight search text
+  const highlightText = (text, searchTerm) => {
+    if (!searchTerm) return text
+    const parts = text.split(new RegExp(`(${searchTerm})`, 'gi'))
+    return parts.map((part, i) => 
+      part.toLowerCase() === searchTerm.toLowerCase() 
+        ? <span key={i} className="bg-yellow-200 px-0.5 rounded">{part}</span> 
+        : part
+    )
+  }
+
+  const clearCategoryFilter = useCallback(() => {
     setCategory('')
     setSearch('')
-  }
+    setCurrentPage(1)
+  }, [])
+
+  // Toggle publish (Admin only)
+  const togglePublish = useCallback((productId, e) => {
+    e.stopPropagation()
+    if (!isAdmin) return
+    
+    setProducts(prev => 
+      prev.map(p => 
+        p.id === productId 
+          ? { ...p, published: !p.published } 
+          : p
+      )
+    )
+    
+    const product = products.find(p => p.id === productId)
+    toast.success(product?.published ? '✅ Product Published' : '🚫 Product Hidden')
+  }, [isAdmin, products])
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
+      <div className="max-w-7xl mx-auto">
+        <Breadcrumb />
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+          {[...Array(10)].map((_, i) => (
+            <ProductSkeleton key={i} />
+          ))}
+        </div>
       </div>
     )
   }
 
   return (
     <div className="max-w-7xl mx-auto">
+      <Breadcrumb />
+
+      {/* Admin Stats */}
+      {isAdmin && (
+        <div className="grid grid-cols-3 gap-4 mb-6">
+          <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
+            <div className="text-sm text-gray-500">Total Products</div>
+            <div className="text-2xl font-bold text-gray-900">
+              <CountUp end={stats.total} duration={1.5} />
+            </div>
+          </div>
+          <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
+            <div className="text-sm text-gray-500">Average Rating</div>
+            <div className="text-2xl font-bold text-gray-900">
+              <CountUp end={stats.avgRating} duration={1.5} decimals={1} />
+            </div>
+          </div>
+          <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
+            <div className="text-sm text-gray-500">Inventory Value</div>
+            <div className="text-2xl font-bold text-gray-900">
+              ₹<CountUp end={stats.totalValue * 83} duration={1.5} />
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
@@ -149,7 +236,7 @@ const ProductsPage = () => {
             <div className="relative">
               <input
                 type="text"
-                placeholder="Search products..."
+                placeholder="Search products... (⌘K)"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="w-full px-4 py-2 pl-10 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
@@ -183,7 +270,7 @@ const ProductsPage = () => {
           </select>
           
           <button
-            onClick={() => { setSearch(''); setCategory('') }}
+            onClick={() => { setSearch(''); setCategory(''); setCurrentPage(1) }}
             className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition"
           >
             Clear All
@@ -192,87 +279,160 @@ const ProductsPage = () => {
       </div>
 
       {/* Product Grid */}
-      {filtered.length === 0 ? (
-        <div className="text-center py-16 bg-white rounded-xl shadow-sm border border-gray-200">
-          <div className="text-6xl mb-4">🔍</div>
-          <h3 className="text-lg font-semibold text-gray-900">No products found</h3>
-          <p className="text-gray-500 text-sm">Try adjusting your search or filters</p>
-          <button 
-            onClick={clearCategoryFilter}
-            className="mt-4 px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition"
-          >
-            View All Products
-          </button>
-        </div>
+      {paginatedProducts.length === 0 ? (
+        <EmptyState 
+          icon="🔍"
+          title="No products match your filters"
+          description="Try clearing filters or searching for another product"
+          actionText="Clear Filters"
+          onAction={clearCategoryFilter}
+        />
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-          {filtered.map((product) => (
-            <div 
-              key={product.id}
-              className="group bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer"
-              onClick={() => navigate(`/products/${product.id}`)}
-            >
-              {/* Product Image */}
-              <div className="relative bg-white p-4 h-48 flex items-center justify-center">
-                <img 
-                  src={product.thumbnail} 
-                  alt={product.title}
-                  className="max-h-full max-w-full object-contain group-hover:scale-105 transition-transform duration-300"
-                />
-                <button 
-                  className="absolute top-2 right-2 p-2 bg-white rounded-full shadow-md opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-50"
-                  onClick={(e) => e.stopPropagation()}
+        <>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+            {paginatedProducts.map((product) => (
+              <div 
+                key={product.id}
+                className="group bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer hover:-translate-y-1"
+                onClick={() => navigate(`/products/${product.id}`)}
+              >
+                <div className="relative bg-white p-4 h-48 flex items-center justify-center">
+                  <img 
+                    src={product.thumbnail} 
+                    alt={product.title}
+                    className="max-h-full max-w-full object-contain group-hover:scale-105 transition-transform duration-300"
+                  />
+                  <button 
+                    className="absolute top-2 right-2 p-2 bg-white rounded-full shadow-md opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-50"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <FaHeart className="w-4 h-4 text-gray-400 hover:text-red-500" />
+                  </button>
+                  
+                  {product.stock > 0 ? (
+                    <span className="absolute bottom-2 left-2 px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded-full">
+                      In Stock
+                    </span>
+                  ) : (
+                    <span className="absolute bottom-2 left-2 px-2 py-0.5 bg-red-100 text-red-700 text-xs rounded-full">
+                      Out of Stock
+                    </span>
+                  )}
+
+                  {/* Admin: Publish toggle */}
+                  {isAdmin && (
+                    <button
+                      onClick={(e) => togglePublish(product.id, e)}
+                      className={`absolute top-2 left-2 px-2 py-0.5 text-xs rounded-full transition ${
+                        product.published 
+                          ? 'bg-green-100 text-green-700 hover:bg-green-200' 
+                          : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                      }`}
+                    >
+                      {product.published ? 'Published' : 'Hidden'}
+                    </button>
+                  )}
+                </div>
+
+                <div className="p-3">
+                  <h3 className="font-medium text-gray-900 text-sm line-clamp-2 h-10">
+                    {highlightText(product.title, search)}
+                  </h3>
+                  
+                  <div className="flex items-center gap-1 mt-1">
+                    <div className="flex items-center gap-0.5 text-xs">
+                      {renderStars(product.rating)}
+                    </div>
+                    <span className="text-xs text-gray-500 ml-1">({product.rating})</span>
+                  </div>
+                  
+                  <div className="mt-2">
+                    <span className="text-lg font-bold text-gray-900">₹{Math.round(product.price * 83)}</span>
+                    <span className="text-xs text-gray-400 line-through ml-2">
+                      ₹{Math.round(product.price * 83 * 1.4)}
+                    </span>
+                    <span className="text-xs text-green-600 ml-2">40% off</span>
+                  </div>
+                  
+                  <div className="mt-1">
+                    <span className="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
+                      {product.category}
+                    </span>
+                  </div>
+
+                  {product.stock > 0 && (
+                    <div className="mt-2 text-xs text-green-600 font-medium">
+                      Free Delivery
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="mt-6 flex flex-wrap items-center justify-between gap-4">
+              <div className="text-sm text-gray-500">
+                Showing {(currentPage - 1) * pageSize + 1} - {Math.min(currentPage * pageSize, filtered.length)} of {filtered.length} products
+              </div>
+              <div className="flex gap-1">
+                <button
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 transition disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <FaHeart className="w-4 h-4 text-gray-400 hover:text-red-500" />
+                  &lt;
                 </button>
                 
-                {product.stock > 0 ? (
-                  <span className="absolute bottom-2 left-2 px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded-full">
-                    In Stock
-                  </span>
-                ) : (
-                  <span className="absolute bottom-2 left-2 px-2 py-0.5 bg-red-100 text-red-700 text-xs rounded-full">
-                    Out of Stock
-                  </span>
-                )}
-              </div>
-
-              {/* Product Info */}
-              <div className="p-3">
-                <h3 className="font-medium text-gray-900 text-sm line-clamp-2 h-10">
-                  {product.title}
-                </h3>
+                {(() => {
+                  const pages = []
+                  const maxVisible = 5
+                  if (totalPages <= maxVisible) {
+                    for (let i = 1; i <= totalPages; i++) pages.push(i)
+                  } else if (currentPage <= 3) {
+                    for (let i = 1; i <= 4; i++) pages.push(i)
+                    pages.push('...')
+                    pages.push(totalPages)
+                  } else if (currentPage >= totalPages - 2) {
+                    pages.push(1)
+                    pages.push('...')
+                    for (let i = totalPages - 3; i <= totalPages; i++) pages.push(i)
+                  } else {
+                    pages.push(1)
+                    pages.push('...')
+                    for (let i = currentPage - 1; i <= currentPage + 1; i++) pages.push(i)
+                    pages.push('...')
+                    pages.push(totalPages)
+                  }
+                  return pages.map((page, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => typeof page === 'number' && setCurrentPage(page)}
+                      className={`px-3 py-1.5 rounded-lg text-sm transition ${
+                        page === currentPage
+                          ? 'bg-purple-600 text-white'
+                          : typeof page === 'number'
+                          ? 'border border-gray-300 hover:bg-gray-50'
+                          : 'text-gray-400 cursor-default'
+                      }`}
+                    >
+                      {page}
+                    </button>
+                  ))
+                })()}
                 
-                <div className="flex items-center gap-1 mt-1">
-                  <div className="flex items-center gap-0.5 text-xs">
-                    {renderStars(product.rating)}
-                  </div>
-                  <span className="text-xs text-gray-500 ml-1">({product.rating})</span>
-                </div>
-                
-                <div className="mt-2">
-                  <span className="text-lg font-bold text-gray-900">₹{Math.round(product.price * 83)}</span>
-                  <span className="text-xs text-gray-400 line-through ml-2">
-                    ₹{Math.round(product.price * 83 * 1.4)}
-                  </span>
-                  <span className="text-xs text-green-600 ml-2">40% off</span>
-                </div>
-                
-                <div className="mt-1">
-                  <span className="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
-                    {product.category}
-                  </span>
-                </div>
-
-                {product.stock > 0 && (
-                  <div className="mt-2 text-xs text-green-600 font-medium">
-                    Free Delivery
-                  </div>
-                )}
+                <button
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                  className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  &gt;
+                </button>
               </div>
             </div>
-          ))}
-        </div>
+          )}
+        </>
       )}
     </div>
   )
