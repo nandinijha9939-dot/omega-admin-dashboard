@@ -1,16 +1,67 @@
-# React + Vite
+# Omega Admin Dashboard 🚀
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A modern, fully responsive admin dashboard built with React, Vite, and Tailwind CSS. Features role-based access control, product management, analytics, and more.
 
-Currently, two official plugins are available:
+## ✨ Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+### 🎯 Core Features
+- **Responsive Dashboard** - Works seamlessly on desktop, tablet, and mobile
+- **Authentication** - Role-based login (Admin/User)
+- **Product Management** - View, search, filter, and sort products
+- **Product Details** - Image carousel, description, pricing, and ratings
+- **Analytics Dashboard** - Total products, average rating, inventory value, category distribution
+- **URL State Sync** - All filters and search parameters reflected in URL
+- **Role-Based Access** - Admin and User views with different permissions
 
-## React Compiler
+### ⚡ Performance Optimizations
+- ✅ Debounced Search (300ms delay)
+- ✅ React.memo for component memoization
+- ✅ useMemo for expensive computations
+- ✅ useCallback for event handlers
+- ✅ React.lazy + Suspense for code splitting
+- ✅ Optimized re-renders
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+### 👑 Admin Features
+- Full access to all products (including hidden)
+- Toggle product visibility (Publish/Hide)
+- Analytics Dashboard
+- Customer management
+- All orders view
 
-## Expanding the ESLint configuration
+### 👤 User Features
+- Browse published products only
+- View product details
+- My Orders
+- Categories browsing
+- Customer notifications
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## 🛠️ Tech Stack
+
+- **React 18** - UI Library
+- **Vite** - Build Tool
+- **React Router v6** - Routing
+- **Tailwind CSS** - Styling
+- **Axios** - API calls
+- **React Icons** - Icons
+- **React Hot Toast** - Notifications
+
+## 📦 Installation
+
+```bash
+# Clone the repository
+git clone https://github.com/nandinijha9939-dot/omega-admin-dashboard.git
+
+# Navigate to project directory
+cd omega-dashboard
+
+# Install dependencies
+npm install
+
+# Start development server
+npm run dev
+
+# Build for production
+npm run build
+
+# Preview production build
+npm run preview
