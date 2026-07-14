@@ -9,7 +9,9 @@ import {
   FaSignOutAlt,
   FaClipboardList,
   FaStore,
-  FaUser
+  FaUser,
+  FaCog,
+  FaHome
 } from 'react-icons/fa'
 import { useAuth } from '../../context/AuthContext'
 
@@ -17,6 +19,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
   const { user, logout, isAdmin } = useAuth()
   const navigate = useNavigate()
 
+  // Customer/User items
   const userItems = [
     { to: '/products', icon: FaStore, label: 'Shop' },
     { to: '/categories', icon: FaTags, label: 'Categories' },
@@ -24,16 +27,17 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
     { to: '/profile', icon: FaUser, label: 'My Profile' },
   ]
 
+  // Admin items - Different from user
   const adminItems = [
+    { to: '/products', icon: FaStore, label: 'Products' },
+    { to: '/categories', icon: FaTags, label: 'Categories' },
     { to: '/analytics', icon: FaChartPie, label: 'Analytics' },
     { to: '/customers', icon: FaUsers, label: 'Customers' },
     { to: '/orders', icon: FaShoppingCart, label: 'All Orders' },
   ]
 
-  let items = [...userItems]
-  if (isAdmin) {
-    items = [...items, ...adminItems]
-  }
+  // Choose items based on role
+  const items = isAdmin ? adminItems : userItems
 
   const handleLogout = () => {
     logout()
@@ -99,7 +103,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
         {/* Navigation */}
         <nav className="flex-1 px-3 py-4 overflow-y-auto">
           <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider px-3 mb-3">
-            {isAdmin ? 'Management' : 'Browse'}
+            {isAdmin ? 'Dashboard' : 'Browse'}
           </div>
           
           {items.map((item) => {
