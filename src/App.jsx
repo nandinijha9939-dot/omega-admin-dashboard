@@ -5,6 +5,7 @@ import Layout from './components/Layout/Layout'
 import Login from './components/Auth/Login'
 import ProtectedRoute from './components/Common/ProtectedRoute'
 import LoadingSpinner from './components/Common/LoadingSpinner'
+import NotFoundPage from './pages/NotFoundPage'
 
 // Lazy load pages
 const ProductsPage = lazy(() => import('./pages/ProductsPage'))
@@ -14,6 +15,7 @@ const CategoriesPage = lazy(() => import('./pages/CategoriesPage'))
 const CustomersPage = lazy(() => import('./pages/CustomersPage'))
 const OrdersPage = lazy(() => import('./pages/OrdersPage'))
 const MyOrdersPage = lazy(() => import('./pages/MyOrdersPage'))
+const UserProfilePage = lazy(() => import('./pages/UserProfilePage'))
 
 function App() {
   return (
@@ -90,6 +92,16 @@ function App() {
             }
           />
           <Route
+            path="/profile"
+            element={
+              <ProtectedRoute>
+                <Suspense fallback={<LoadingSpinner />}>
+                  <UserProfilePage />
+                </Suspense>
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/analytics"
             element={
               <ProtectedRoute requiredRole="admin">
@@ -119,8 +131,7 @@ function App() {
               </ProtectedRoute>
             }
           />
-          {/* Redirect any unknown routes to products */}
-          <Route path="*" element={<Navigate to="/products" replace />} />
+          <Route path="*" element={<NotFoundPage />} />
         </Route>
       </Routes>
     </>

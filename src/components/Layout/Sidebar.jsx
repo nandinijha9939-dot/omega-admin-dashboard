@@ -1,5 +1,3 @@
-// src/components/Layout/Sidebar.jsx - same as before but cleaner
-
 import React from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import { 
@@ -11,7 +9,7 @@ import {
   FaSignOutAlt,
   FaClipboardList,
   FaStore,
-  FaHome
+  FaUser
 } from 'react-icons/fa'
 import { useAuth } from '../../context/AuthContext'
 
@@ -19,24 +17,32 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
   const { user, logout, isAdmin } = useAuth()
   const navigate = useNavigate()
 
-  // User items - Customer view
   const userItems = [
     { to: '/products', icon: FaStore, label: 'Shop' },
     { to: '/categories', icon: FaTags, label: 'Categories' },
     { to: '/my-orders', icon: FaClipboardList, label: 'My Orders' },
+    { to: '/profile', icon: FaUser, label: 'My Profile' },
   ]
 
-  // Admin items - Full management
   const adminItems = [
     { to: '/analytics', icon: FaChartPie, label: 'Analytics' },
     { to: '/customers', icon: FaUsers, label: 'Customers' },
     { to: '/orders', icon: FaShoppingCart, label: 'All Orders' },
   ]
 
-  const items = isAdmin ? [...userItems, ...adminItems] : userItems
+  let items = [...userItems]
+  if (isAdmin) {
+    items = [...items, ...adminItems]
+  }
+
+  const handleLogout = () => {
+    logout()
+    navigate('/login')
+  }
 
   return (
     <>
+      {/* Mobile overlay */}
       {isOpen && (
         <div 
           className="fixed inset-0 bg-black/50 z-40 md:hidden"
@@ -46,13 +52,13 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
 
       <aside className={`
         fixed md:static inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200
-        transform transition-transform duration-300
+        transform transition-transform duration-300 ease-in-out
         ${isOpen ? 'translate-x-0' : '-translate-x-full'}
         md:translate-x-0
-        flex flex-col h-full
+        flex flex-col h-full overflow-y-auto
       `}>
         {/* Logo */}
-        <div className="p-5 border-b border-gray-200 bg-gradient-to-r from-purple-50 to-indigo-50">
+        <div className="p-5 border-b border-gray-200 bg-gradient-to-r from-purple-50 to-indigo-50 flex-shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-gradient-to-br from-purple-600 to-indigo-600 rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-lg">
               Ω
@@ -65,13 +71,13 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
         </div>
 
         {/* User Profile */}
-        <div className="p-4 mx-4 mt-4 bg-gradient-to-r from-purple-50 to-indigo-50 rounded-xl border border-purple-100">
+        <div className="p-4 mx-4 mt-4 bg-gradient-to-r from-purple-50 to-indigo-50 rounded-xl border border-purple-100 flex-shrink-0">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-600 to-indigo-600 flex items-center justify-center text-white font-bold text-lg shadow-md">
+            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-600 to-indigo-600 flex items-center justify-center text-white font-bold text-lg shadow-md flex-shrink-0">
               {user?.name?.[0] || 'U'}
             </div>
-            <div className="flex-1">
-              <div className="font-semibold text-gray-900">{user?.name || 'User'}</div>
+            <div className="flex-1 min-w-0">
+              <div className="font-semibold text-gray-900 truncate">{user?.name || 'User'}</div>
               <div className="flex items-center gap-2">
                 <span className={`text-xs px-2 py-0.5 rounded-full ${
                   isAdmin ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'
@@ -81,10 +87,11 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
               </div>
             </div>
             <button
-              onClick={() => { logout(); navigate('/login') }}
-              className="p-2 hover:bg-white/50 rounded-lg transition-colors"
+              onClick={handleLogout}
+              className="p-2 hover:bg-white/50 rounded-lg transition-colors flex-shrink-0"
+              title="Logout"
             >
-              <FaSignOutAlt className="w-4 h-4 text-gray-500 hover:text-red-500" />
+              <FaSignOutAlt className="w-4 h-4 text-gray-500 hover:text-red-500 transition-colors" />
             </button>
           </div>
         </div>
@@ -108,7 +115,11 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
                       : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                   }`
                 }
-                onClick={() => setIsOpen(false)}
+                onClick={() => {
+                  if (window.innerWidth < 768) {
+                    setIsOpen(false)
+                  }
+                }}
               >
                 {({ isActive }) => (
                   <>
@@ -122,7 +133,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
         </nav>
 
         {/* Footer */}
-        <div className="p-4 border-t border-gray-200">
+        <div className="p-4 border-t border-gray-200 flex-shrink-0">
           <div className="text-center">
             <p className="text-xs text-gray-400">© 2024 Omega</p>
             <p className="text-xs text-gray-400 mt-1">v2.0.0</p>

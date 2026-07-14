@@ -10,9 +10,9 @@ const Layout = () => {
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar isOpen={sidebarOpen} setIsOpen={setSidebarOpen} />
       
-      <div className="flex-1 md:ml-64">
+      <div className="flex-1 flex flex-col min-h-screen w-full max-w-full overflow-x-hidden">
         <Topbar onMenuClick={() => setSidebarOpen(!sidebarOpen)} />
-        <main className="p-4 md:p-6">
+        <main className="flex-1 py-3 sm:py-4 md:py-6 lg:py-8 w-full max-w-full overflow-x-hidden">
           <Outlet />
         </main>
       </div>

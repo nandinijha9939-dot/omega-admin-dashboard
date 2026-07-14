@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import axios from 'axios'
-import { FaStar, FaStarHalfAlt, FaRegStar, FaShoppingCart, FaHeart, FaShare, FaCheck } from 'react-icons/fa'
+import { FaStar, FaStarHalfAlt, FaRegStar, FaShoppingCart, FaHeart, FaArrowLeft } from 'react-icons/fa'
+import toast from 'react-hot-toast'
+import Breadcrumb from '../components/Common/Breadcrumb'
+import LoadingSpinner from '../components/Common/LoadingSpinner'
 
 const ProductDetailPage = () => {
   const { id } = useParams()
@@ -9,66 +12,90 @@ const ProductDetailPage = () => {
   const [product, setProduct] = useState(null)
   const [loading, setLoading] = useState(true)
   const [selectedImage, setSelectedImage] = useState(0)
+  const [wishlist, setWishlist] = useState(() => {
+    try {
+      const saved = localStorage.getItem('omega_wishlist')
+      return saved ? JSON.parse(saved) : []
+    } catch {
+      return []
+    }
+  })
 
   useEffect(() => {
-    axios.get(`https://dummyjson.com/products/${id}`)
-      .then(res => { 
-        setProduct(res.data)
+    const fetchProduct = async () => {
+      try {
+        setLoading(true)
+        const response = await axios.get(`https://dummyjson.com/products/${id}`)
+        setProduct(response.data)
+      } catch (error) {
+        console.error('Failed to fetch product:', error)
+        toast.error('Failed to load product')
+        navigate('/products')
+      } finally {
         setLoading(false)
-      })
-      .catch(() => setLoading(false))
-  }, [id])
+      }
+    }
+    fetchProduct()
+  }, [id, navigate])
+
+  const toggleWishlist = () => {
+    if (!product) return
+    setWishlist(prev => {
+      const exists = prev.includes(product.id)
+      const newWishlist = exists 
+        ? prev.filter(pid => pid !== product.id)
+        : [...prev, product.id]
+      
+      localStorage.setItem('omega_wishlist', JSON.stringify(newWishlist))
+      
+      if (!exists) {
+        toast.success('❤️ Added to wishlist!')
+      } else {
+        toast.success('Removed from wishlist')
+      }
+      
+      return newWishlist
+    })
+  }
 
   const renderStars = (rating) => {
     const full = Math.floor(rating)
     const half = rating % 1 >= 0.5 ? 1 : 0
     const empty = 5 - full - half
     return (
-      <div className="flex items-center gap-0.5">
-        {[...Array(full)].map((_, i) => <FaStar key={`full-${i}`} className="text-yellow-400 text-lg" />)}
-        {half === 1 && <FaStarHalfAlt className="text-yellow-400 text-lg" />}
-        {[...Array(empty)].map((_, i) => <FaRegStar key={`empty-${i}`} className="text-yellow-400 text-lg" />)}
-      </div>
+      <>
+        {[...Array(full)].map((_, i) => <FaStar key={`full-${i}`} className="text-yellow-400" />)}
+        {half === 1 && <FaStarHalfAlt className="text-yellow-400" />}
+        {[...Array(empty)].map((_, i) => <FaRegStar key={`empty-${i}`} className="text-yellow-400" />)}
+      </>
     )
   }
 
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
-      </div>
-    )
-  }
-
-  if (!product) {
-    return <div className="text-center py-20">Product not found</div>
-  }
+  if (loading) return <LoadingSpinner />
+  if (!product) return null
 
   const images = [product.thumbnail, ...(product.images || [])].slice(0, 5)
   const inStock = product.stock > 0
   const discount = Math.round((1 - product.price / (product.price * 1.4)) * 100)
 
   return (
-    <div className="max-w-6xl mx-auto">
-      {/* Breadcrumb - Amazon style */}
-      <div className="text-sm text-gray-500 mb-4">
-        <span className="hover:text-purple-600 cursor-pointer" onClick={() => navigate('/products')}>
-          Home
-        </span>
-        <span className="mx-2">›</span>
-        <span className="hover:text-purple-600 cursor-pointer" onClick={() => navigate('/products')}>
-          Products
-        </span>
-        <span className="mx-2">›</span>
-        <span className="text-gray-900">{product.category}</span>
-      </div>
+    <div className="w-full px-2 sm:px-4 md:px-6 lg:px-8">
+      <Breadcrumb />
+      
+      <button
+        onClick={() => navigate('/products')}
+        className="flex items-center gap-1 sm:gap-2 text-gray-500 hover:text-gray-700 transition-colors mb-4 text-sm sm:text-base"
+      >
+        <FaArrowLeft className="w-3 h-3 sm:w-4 sm:h-4" />
+        Back to Products
+      </button>
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        <div className="grid md:grid-cols-2 gap-6 p-6">
-          {/* Left - Images - Amazon style */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 p-4 sm:p-6">
+          {/* Images Section - Responsive */}
           <div>
             {/* Main Image */}
-            <div className="bg-gray-50 rounded-xl p-4 h-96 flex items-center justify-center border border-gray-200">
+            <div className="bg-gray-50 rounded-xl p-2 sm:p-4 h-64 sm:h-80 md:h-96 flex items-center justify-center border border-gray-200">
               <img 
                 src={images[selectedImage]} 
                 alt={product.title}
@@ -76,12 +103,12 @@ const ProductDetailPage = () => {
               />
             </div>
             
-            {/* Thumbnails */}
-            <div className="flex gap-2 mt-3 overflow-x-auto">
+            {/* Thumbnails - Responsive */}
+            <div className="flex gap-1 sm:gap-2 mt-2 sm:mt-3 overflow-x-auto pb-2">
               {images.map((img, idx) => (
                 <div 
                   key={idx}
-                  className={`w-20 h-20 border-2 rounded-lg p-1 cursor-pointer transition ${
+                  className={`w-14 h-14 sm:w-20 sm:h-20 border-2 rounded-lg p-1 cursor-pointer transition flex-shrink-0 ${
                     selectedImage === idx ? 'border-purple-600' : 'border-gray-200 hover:border-purple-300'
                   }`}
                   onClick={() => setSelectedImage(idx)}
@@ -92,34 +119,33 @@ const ProductDetailPage = () => {
             </div>
           </div>
 
-          {/* Right - Product Info - Amazon/Flipkart style */}
-          <div>
-            {/* Title */}
-            <h1 className="text-2xl font-bold text-gray-900">{product.title}</h1>
+          {/* Product Info - Responsive */}
+          <div className="space-y-3 sm:space-y-4">
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900">{product.title}</h1>
             
-            {/* Rating - Amazon style */}
-            <div className="flex items-center gap-3 mt-2">
-              <div className="flex items-center gap-1">
+            {/* Rating */}
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="flex items-center gap-0.5">
                 {renderStars(product.rating)}
               </div>
               <span className="text-sm text-gray-500">{product.rating} out of 5</span>
               <span className="text-sm text-blue-600">{Math.floor(Math.random() * 500) + 100} ratings</span>
             </div>
 
-            {/* Price - Flipkart style */}
-            <div className="mt-4 p-4 bg-gray-50 rounded-xl border border-gray-200">
-              <div className="flex items-end gap-3">
-                <span className="text-3xl font-bold text-gray-900">
+            {/* Price */}
+            <div className="p-3 sm:p-4 bg-gray-50 rounded-xl border border-gray-200">
+              <div className="flex flex-wrap items-end gap-2 sm:gap-3">
+                <span className="text-2xl sm:text-3xl font-bold text-gray-900">
                   ₹{Math.round(product.price * 83)}
                 </span>
-                <span className="text-lg text-gray-400 line-through">
+                <span className="text-base sm:text-lg text-gray-400 line-through">
                   ₹{Math.round(product.price * 83 * 1.4)}
                 </span>
-                <span className="text-lg font-semibold text-green-600">
+                <span className="text-base sm:text-lg font-semibold text-green-600">
                   {discount}% off
                 </span>
               </div>
-              <div className="text-sm text-green-600 mt-1">
+              <div className={`text-sm mt-1 ${inStock ? 'text-green-600' : 'text-red-600'}`}>
                 {inStock ? 'In Stock' : 'Out of Stock'}
               </div>
               <div className="text-xs text-gray-500 mt-1">
@@ -127,14 +153,14 @@ const ProductDetailPage = () => {
               </div>
             </div>
 
-            {/* Description - Amazon style */}
-            <div className="mt-4">
-              <h3 className="font-semibold text-gray-900 mb-1">About this item</h3>
+            {/* Description */}
+            <div>
+              <h3 className="font-semibold text-gray-900 mb-1 text-sm sm:text-base">About this item</h3>
               <p className="text-sm text-gray-600 leading-relaxed">{product.description}</p>
             </div>
 
-            {/* Details - Flipkart style */}
-            <div className="mt-4 grid grid-cols-2 gap-2 text-sm">
+            {/* Details */}
+            <div className="grid grid-cols-2 gap-2 text-sm">
               <div>
                 <span className="text-gray-500">Category</span>
                 <div className="font-medium text-gray-900">{product.category}</div>
@@ -155,34 +181,41 @@ const ProductDetailPage = () => {
               </div>
             </div>
 
-            {/* Actions - Amazon style */}
-            <div className="mt-6 flex gap-3">
+            {/* Actions */}
+            <div className="flex flex-wrap gap-2 sm:gap-3 pt-2">
               <button 
-                className={`flex-1 flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-semibold transition ${
+                className={`flex-1 flex items-center justify-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl font-semibold transition ${
                   inStock 
                     ? 'bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white shadow-lg shadow-orange-200' 
                     : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                 }`}
                 disabled={!inStock}
               >
-                <FaShoppingCart className="w-5 h-5" />
+                <FaShoppingCart className="w-4 h-4 sm:w-5 sm:h-5" />
                 {inStock ? 'Add to Cart' : 'Out of Stock'}
               </button>
               
-              <button className="flex items-center gap-2 px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-semibold transition shadow-lg shadow-purple-200">
+              <button className="flex-1 flex items-center justify-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-semibold transition shadow-lg shadow-purple-200">
                 Buy Now
               </button>
               
-              <button className="p-3 border border-gray-300 rounded-xl hover:bg-gray-50 transition">
-                <FaHeart className="w-5 h-5 text-gray-400 hover:text-red-500 transition" />
+              <button 
+                onClick={toggleWishlist}
+                className={`p-2.5 sm:p-3 border border-gray-300 rounded-xl hover:bg-gray-50 transition ${
+                  wishlist.includes(product.id) ? 'bg-red-50 border-red-200' : ''
+                }`}
+              >
+                <FaHeart className={`w-4 h-4 sm:w-5 sm:h-5 ${
+                  wishlist.includes(product.id) ? 'text-red-500 fill-current' : 'text-gray-400'
+                }`} />
               </button>
             </div>
 
-            {/* Delivery info - Amazon style */}
+            {/* Delivery info */}
             {inStock && (
-              <div className="mt-4 p-3 bg-gray-50 rounded-xl border border-gray-200">
+              <div className="p-3 bg-gray-50 rounded-xl border border-gray-200">
                 <div className="flex items-center gap-2 text-sm">
-                  <FaCheck className="text-green-600" />
+                  <span className="text-green-600 text-lg">✓</span>
                   <span className="text-gray-600">
                     Free delivery by <span className="font-medium text-gray-900">
                       {new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toLocaleDateString()}
