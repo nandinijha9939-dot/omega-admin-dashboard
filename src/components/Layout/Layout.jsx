@@ -12,7 +12,7 @@ const Layout = () => {
       
       <div className="flex-1 flex flex-col min-h-screen w-full max-w-full overflow-x-hidden">
         <Topbar onMenuClick={() => setSidebarOpen(!sidebarOpen)} />
-        <main className="flex-1 py-3 sm:py-4 md:py-6 lg:py-8 w-full max-w-full overflow-x-hidden">
+        <main className="flex-1 py-3 sm:py-4 md:py-6 lg:py-8 w-full max-w-full overflow-x-hidden px-3 sm:px-4 md:px-6 lg:px-8">
           <Outlet />
         </main>
       </div>

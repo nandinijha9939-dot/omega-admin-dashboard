@@ -10,8 +10,7 @@ import {
   FaClipboardList,
   FaStore,
   FaUser,
-  FaCog,
-  FaHome
+  FaTimes
 } from 'react-icons/fa'
 import { useAuth } from '../../context/AuthContext'
 
@@ -19,7 +18,6 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
   const { user, logout, isAdmin } = useAuth()
   const navigate = useNavigate()
 
-  // Customer/User items
   const userItems = [
     { to: '/products', icon: FaStore, label: 'Shop' },
     { to: '/categories', icon: FaTags, label: 'Categories' },
@@ -27,7 +25,6 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
     { to: '/profile', icon: FaUser, label: 'My Profile' },
   ]
 
-  // Admin items - Different from user
   const adminItems = [
     { to: '/products', icon: FaStore, label: 'Products' },
     { to: '/categories', icon: FaTags, label: 'Categories' },
@@ -36,7 +33,6 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
     { to: '/orders', icon: FaShoppingCart, label: 'All Orders' },
   ]
 
-  // Choose items based on role
   const items = isAdmin ? adminItems : userItems
 
   const handleLogout = () => {
@@ -46,45 +42,61 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
 
   return (
     <>
-      {/* Mobile overlay */}
+      {/* Overlay */}
       {isOpen && (
         <div 
-          className="fixed inset-0 bg-black/50 z-40 md:hidden"
+          className="fixed inset-0 bg-black/30 backdrop-blur-sm z-40"
           onClick={() => setIsOpen(false)}
         />
       )}
 
+      {/* Sidebar */}
       <aside className={`
-        fixed md:static inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200
+        fixed top-0 left-0 z-50 w-72 h-full bg-white
         transform transition-transform duration-300 ease-in-out
         ${isOpen ? 'translate-x-0' : '-translate-x-full'}
-        md:translate-x-0
-        flex flex-col h-full overflow-y-auto
+        flex flex-col overflow-y-auto
+        border-r border-gray-100
+        shadow-2xl shadow-gray-200/30
       `}>
-        {/* Logo */}
-        <div className="p-5 border-b border-gray-200 bg-gradient-to-r from-purple-50 to-indigo-50 flex-shrink-0">
+        {/* Close button on mobile */}
+        <div className="flex items-center justify-between p-4 border-b border-gray-100 md:hidden">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-purple-600 to-indigo-600 rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-lg">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-600 to-indigo-600 flex items-center justify-center text-white font-bold text-sm">
               Ω
             </div>
-            <div>
-              <h2 className="text-xl font-bold text-gray-900">Omega<span className="text-purple-600">.</span></h2>
-              <p className="text-xs text-gray-500">{isAdmin ? 'Admin Panel' : 'Customer Portal'}</p>
-            </div>
+            <span className="font-bold text-gray-900">Omega</span>
+          </div>
+          <button
+            onClick={() => setIsOpen(false)}
+            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+          >
+            <FaTimes className="w-5 h-5 text-gray-600" />
+          </button>
+        </div>
+
+        {/* Logo - Desktop */}
+        <div className="hidden md:flex p-5 border-b border-gray-100 bg-gradient-to-r from-purple-50/50 to-indigo-50/50 flex-shrink-0 items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-600 to-indigo-600 flex items-center justify-center text-white font-bold text-xl shadow-md shadow-purple-200/40">
+            Ω
+          </div>
+          <div>
+            <h2 className="text-xl font-bold text-gray-900 tracking-tight">Omega<span className="text-purple-600">.</span></h2>
+            <p className="text-xs text-gray-500/70">{isAdmin ? 'Admin Panel' : 'Customer Portal'}</p>
           </div>
         </div>
 
         {/* User Profile */}
-        <div className="p-4 mx-4 mt-4 bg-gradient-to-r from-purple-50 to-indigo-50 rounded-xl border border-purple-100 flex-shrink-0">
+        <div className="p-4 mx-4 mt-4 rounded-2xl bg-gradient-to-r from-purple-50/50 to-indigo-50/50 border border-purple-100/40 flex-shrink-0">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-600 to-indigo-600 flex items-center justify-center text-white font-bold text-lg shadow-md flex-shrink-0">
+            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-600 to-indigo-600 flex items-center justify-center text-white font-bold text-lg shadow-md shadow-purple-200/30 flex-shrink-0">
               {user?.name?.[0] || 'U'}
             </div>
             <div className="flex-1 min-w-0">
               <div className="font-semibold text-gray-900 truncate">{user?.name || 'User'}</div>
               <div className="flex items-center gap-2">
                 <span className={`text-xs px-2 py-0.5 rounded-full ${
-                  isAdmin ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'
+                  isAdmin ? 'bg-purple-100/80 text-purple-700' : 'bg-blue-100/80 text-blue-700'
                 }`}>
                   {isAdmin ? '👑 Admin' : '🛒 Customer'}
                 </span>
@@ -102,7 +114,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
 
         {/* Navigation */}
         <nav className="flex-1 px-3 py-4 overflow-y-auto">
-          <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider px-3 mb-3">
+          <div className="text-xs font-semibold text-gray-400/70 uppercase tracking-widest px-3 mb-4">
             {isAdmin ? 'Dashboard' : 'Browse'}
           </div>
           
@@ -113,16 +125,14 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
                 key={item.label}
                 to={item.to}
                 className={({ isActive }) =>
-                  `flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all duration-200 ${
+                  `flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all duration-200 cursor-pointer ${
                     isActive 
-                      ? 'bg-gradient-to-r from-purple-50 to-indigo-50 text-purple-700 font-medium shadow-sm' 
-                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                      ? 'bg-purple-50/60 text-purple-700 font-medium shadow-sm' 
+                      : 'text-gray-600 hover:bg-gray-50/60 hover:text-gray-900'
                   }`
                 }
                 onClick={() => {
-                  if (window.innerWidth < 768) {
-                    setIsOpen(false)
-                  }
+                  setIsOpen(false)
                 }}
               >
                 {({ isActive }) => (
@@ -137,10 +147,10 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
         </nav>
 
         {/* Footer */}
-        <div className="p-4 border-t border-gray-200 flex-shrink-0">
+        <div className="p-4 border-t border-gray-100 flex-shrink-0">
           <div className="text-center">
-            <p className="text-xs text-gray-400">© 2024 Omega</p>
-            <p className="text-xs text-gray-400 mt-1">v2.0.0</p>
+            <p className="text-xs text-gray-400/60">© 2024 Omega</p>
+            <p className="text-[10px] text-gray-400/40 mt-1 tracking-widest">✦ v2.0.0 ✦</p>
           </div>
         </div>
       </aside>

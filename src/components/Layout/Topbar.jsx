@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { FaBars, FaBell, FaSearch } from 'react-icons/fa'
+import { FaBell, FaSearch, FaBars } from 'react-icons/fa'
 import { useAuth } from '../../context/AuthContext'
 import toast from 'react-hot-toast'
 
@@ -144,21 +144,22 @@ const Topbar = ({ onMenuClick }) => {
   const unreadCount = notifications.length
 
   return (
-    <header className="bg-white border-b border-gray-200 px-3 sm:px-4 md:px-6 h-14 sm:h-16 flex items-center justify-between sticky top-0 z-30 w-full">
+    <header className="bg-white/95 backdrop-blur-sm border-b border-gray-100/80 px-3 sm:px-4 md:px-6 h-14 sm:h-16 flex items-center justify-between sticky top-0 z-30 w-full">
       <div className="flex items-center gap-2 sm:gap-4 min-w-0 flex-1">
-        {/* Mobile menu button - only visible on mobile */}
+        {/* Hamburger Button - Now in Topbar */}
         <button
           onClick={onMenuClick}
-          className="md:hidden p-1.5 sm:p-2 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0"
+          className="p-2 hover:bg-gray-100/60 rounded-lg transition-colors flex-shrink-0"
+          aria-label="Toggle Sidebar"
         >
-          <FaBars className="w-5 h-5" />
+          <FaBars className="w-5 h-5 text-gray-700" />
         </button>
         
         <div className="min-w-0 flex-1">
-          <h1 className="text-base sm:text-lg font-semibold text-gray-900 truncate">
+          <h1 className="text-base sm:text-lg font-semibold text-gray-900 truncate tracking-tight">
             {getPageTitle()}
           </h1>
-          <p className="text-xs text-gray-400 hidden sm:block truncate">
+          <p className="text-xs text-gray-400/70 hidden sm:block truncate">
             Welcome back, {user?.name}
           </p>
         </div>
@@ -167,20 +168,20 @@ const Topbar = ({ onMenuClick }) => {
       <div className="flex items-center gap-1 sm:gap-2 md:gap-3 flex-shrink-0">
         {/* Search - Desktop */}
         <div className="relative hidden md:block">
-          <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+          <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400/70 w-4 h-4" />
           <input
             type="text"
             placeholder="Search... (⌘K)"
             value={search}
             onChange={handleSearch}
-            className="pl-9 pr-4 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent w-32 lg:w-48 xl:w-64 transition-all"
+            className="pl-9 pr-4 py-1.5 bg-gray-50/60 border border-gray-200/60 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-400/40 w-32 lg:w-48 xl:w-64 transition-all placeholder:text-gray-400/50"
           />
         </div>
 
         {/* Search - Mobile */}
         <button 
           onClick={() => setShowMobileSearch(!showMobileSearch)}
-          className="md:hidden p-1.5 sm:p-2 hover:bg-gray-100 rounded-lg transition-colors"
+          className="md:hidden p-1.5 sm:p-2 hover:bg-gray-100/60 rounded-lg transition-colors"
         >
           <FaSearch className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600" />
         </button>
@@ -189,7 +190,7 @@ const Topbar = ({ onMenuClick }) => {
         <button 
           ref={buttonRef}
           onClick={handleNotificationClick}
-          className="p-1.5 sm:p-2 hover:bg-gray-100 rounded-lg transition-colors relative"
+          className="p-1.5 sm:p-2 hover:bg-gray-100/60 rounded-lg transition-colors relative"
         >
           <FaBell className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600" />
           {unreadCount > 0 && (
@@ -200,7 +201,7 @@ const Topbar = ({ onMenuClick }) => {
         {/* User Profile */}
         <div 
           onClick={handleUserClick}
-          className="flex items-center gap-1 sm:gap-2 bg-gray-50 rounded-lg px-2 sm:px-3 py-1 border border-gray-200 cursor-pointer hover:border-purple-300 hover:shadow-md transition-all group"
+          className="flex items-center gap-1 sm:gap-2 bg-gray-50/60 rounded-xl px-2 sm:px-3 py-1 border border-gray-200/60 cursor-pointer hover:border-purple-300/40 hover:shadow-md transition-all group"
         >
           <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-gradient-to-br from-purple-600 to-indigo-600 flex items-center justify-center text-white text-xs sm:text-sm font-semibold group-hover:scale-105 transition">
             {user?.name?.[0] || 'U'}
@@ -213,15 +214,15 @@ const Topbar = ({ onMenuClick }) => {
 
       {/* Mobile Search Bar */}
       {showMobileSearch && (
-        <div className="absolute top-14 left-0 right-0 bg-white border-b border-gray-200 p-3 z-40 md:hidden shadow-lg">
+        <div className="absolute top-14 left-0 right-0 bg-white/95 backdrop-blur-sm border-b border-gray-100/80 p-3 z-40 md:hidden shadow-lg">
           <div className="relative">
-            <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+            <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400/70 w-4 h-4" />
             <input
               type="text"
               placeholder="Search products..."
               value={search}
               onChange={handleSearch}
-              className="w-full pl-9 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="w-full pl-9 pr-4 py-2 bg-gray-50/60 border border-gray-200/60 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-400/40"
               autoFocus
             />
           </div>
@@ -232,13 +233,13 @@ const Topbar = ({ onMenuClick }) => {
       {showNotifications && (
         <div 
           ref={notificationRef}
-          className="absolute right-2 sm:right-4 top-14 sm:top-16 mt-2 w-[calc(100vw-16px)] sm:w-80 md:w-96 bg-white rounded-xl shadow-xl border border-gray-200 z-50 overflow-hidden animate-fade-in max-h-[80vh]"
+          className="absolute right-2 sm:right-4 top-14 sm:top-16 mt-2 w-[calc(100vw-16px)] sm:w-80 md:w-96 bg-white/95 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-100/80 z-50 overflow-hidden animate-fade-in max-h-[80vh]"
         >
-          <div className="p-3 sm:p-4 border-b border-gray-200 flex items-center justify-between">
+          <div className="p-3 sm:p-4 border-b border-gray-100/80 flex items-center justify-between">
             <h3 className="font-semibold text-gray-900 text-sm sm:text-base">
               {isAdmin ? 'Admin Notifications' : 'Notifications'}
             </h3>
-            <span className="text-xs text-purple-600 font-medium">
+            <span className="text-xs text-purple-600/80 font-medium">
               {unreadCount} new
             </span>
           </div>
@@ -247,22 +248,22 @@ const Topbar = ({ onMenuClick }) => {
             {notifications.map((notif) => (
               <div 
                 key={notif.id} 
-                className="flex items-start gap-2 sm:gap-3 p-2 sm:p-3 hover:bg-gray-50 rounded-xl transition cursor-pointer group"
+                className="flex items-start gap-2 sm:gap-3 p-2 sm:p-3 rounded-xl transition-all duration-200 hover:bg-gray-50/60 border border-transparent hover:border-gray-100/60"
               >
                 <div className={`w-1.5 h-1.5 sm:w-2 sm:h-2 mt-1.5 sm:mt-2 ${notif.color} rounded-full flex-shrink-0`}></div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs sm:text-sm font-medium text-gray-900 group-hover:text-purple-600 transition truncate">
+                  <p className="text-xs sm:text-sm font-medium text-gray-900 truncate">
                     {notif.title}
                   </p>
-                  <p className="text-[10px] sm:text-xs text-gray-500 truncate">{notif.description}</p>
-                  <p className="text-[10px] sm:text-xs text-gray-400 mt-0.5">{notif.time}</p>
+                  <p className="text-[10px] sm:text-xs text-gray-500/70 truncate">{notif.description}</p>
+                  <p className="text-[10px] sm:text-xs text-gray-400/60 mt-0.5">{notif.time}</p>
                 </div>
               </div>
             ))}
           </div>
           
-          <div className="p-2 sm:p-3 border-t border-gray-200 text-center">
-            <button className="text-xs sm:text-sm text-purple-600 hover:text-purple-700 font-medium">
+          <div className="p-2 sm:p-3 border-t border-gray-100/80 text-center">
+            <button className="text-xs sm:text-sm text-purple-600/80 hover:text-purple-700 font-medium">
               {isAdmin ? 'View all notifications' : 'See all updates'}
             </button>
           </div>
