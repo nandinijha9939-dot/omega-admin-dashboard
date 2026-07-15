@@ -10,9 +10,9 @@ import {
   FaTruck,
   FaDollarSign,
   FaChartLine,
-  FaFilter,
   FaDownload,
-  FaPrint
+  FaPrint,
+  FaTimes
 } from 'react-icons/fa'
 import { useAuth } from '../context/AuthContext'
 import Breadcrumb from '../components/Common/Breadcrumb'
@@ -39,7 +39,7 @@ const OrdersPage = () => {
         const products = productRes.data.products
         const users = userRes.data.users
         const statuses = ['delivered', 'processing', 'shipped', 'pending', 'cancelled']
-        const paymentMethods = ['Credit Card', 'PayPal', 'Cash', 'Bank Transfer', 'Apple Pay', 'Google Pay']
+        const paymentMethods = ['Credit Card', 'PayPal', 'Cash', 'Bank Transfer', 'Apple Pay']
         
         const ordersData = Array.from({ length: 25 }, (_, i) => {
           const user = users[i % users.length]
@@ -80,7 +80,6 @@ const OrdersPage = () => {
       } catch (error) {
         console.error('Failed to generate orders:', error)
         toast.error('Failed to load orders')
-        // Fallback data
         setOrders([
           {
             id: 'ORD-0001',
@@ -118,31 +117,26 @@ const OrdersPage = () => {
         label: 'Delivered', 
         className: 'bg-green-100 text-green-700',
         icon: <FaCheckCircle className="text-green-500" />,
-        color: '#22c55e'
       },
       processing: { 
         label: 'Processing', 
         className: 'bg-blue-100 text-blue-700',
         icon: <FaClock className="text-blue-500" />,
-        color: '#3b82f6'
       },
       shipped: { 
         label: 'Shipped', 
         className: 'bg-purple-100 text-purple-700',
         icon: <FaTruck className="text-purple-500" />,
-        color: '#8b5cf6'
       },
       pending: { 
         label: 'Pending', 
         className: 'bg-yellow-100 text-yellow-700',
         icon: <FaClock className="text-yellow-500" />,
-        color: '#eab308'
       },
       cancelled: { 
         label: 'Cancelled', 
         className: 'bg-red-100 text-red-700',
         icon: <FaTimesCircle className="text-red-500" />,
-        color: '#ef4444'
       }
     }
     return configs[status] || configs.pending
@@ -151,7 +145,7 @@ const OrdersPage = () => {
   const filteredOrders = useMemo(() => {
     let result = orders
     if (search) {
-      const query = search.toLowerCase()
+      const query = search.toLowerCase().trim()
       result = result.filter(o => 
         o.id.toLowerCase().includes(query) ||
         o.customer.toLowerCase().includes(query) ||
@@ -174,6 +168,45 @@ const OrdersPage = () => {
     const avgOrder = total > 0 ? revenue / total : 0
     return { total, delivered, processing, pending, cancelled, revenue, avgOrder }
   }, [orders])
+
+  // CSV Export - Working
+  const handleExport = () => {
+    if (filteredOrders.length === 0) {
+      toast.error('No orders to export')
+      return
+    }
+    
+    const headers = ['Order ID', 'Customer', 'Date', 'Total', 'Status', 'Payment Method']
+    const rows = filteredOrders.map(o => [
+      o.id,
+      o.customer,
+      o.date,
+      `₹${Math.round(o.total * 83).toLocaleString()}`,
+      o.status,
+      o.paymentMethod
+    ])
+    
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.join(','))
+    ].join('\n')
+    
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    const url = window.URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `orders_${new Date().toISOString().split('T')[0]}.csv`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    window.URL.revokeObjectURL(url)
+    toast.success('📊 Orders exported successfully!')
+  }
+
+  // Print - Working
+  const handlePrint = () => {
+    window.print()
+  }
 
   if (!isAdmin) {
     return (
@@ -205,11 +238,17 @@ const OrdersPage = () => {
           </p>
         </div>
         <div className="flex gap-2">
-          <button className="px-3 sm:px-4 py-1.5 sm:py-2 border border-gray-200 rounded-lg hover:bg-gray-50 transition text-xs sm:text-sm flex items-center gap-1">
+          <button 
+            onClick={handleExport}
+            className="px-3 sm:px-4 py-1.5 sm:py-2 border border-gray-200 rounded-lg hover:bg-gray-50 transition text-xs sm:text-sm flex items-center gap-1"
+          >
             <FaDownload className="w-3 h-3 sm:w-4 sm:h-4" />
             Export
           </button>
-          <button className="px-3 sm:px-4 py-1.5 sm:py-2 border border-gray-200 rounded-lg hover:bg-gray-50 transition text-xs sm:text-sm flex items-center gap-1">
+          <button 
+            onClick={handlePrint}
+            className="px-3 sm:px-4 py-1.5 sm:py-2 border border-gray-200 rounded-lg hover:bg-gray-50 transition text-xs sm:text-sm flex items-center gap-1"
+          >
             <FaPrint className="w-3 h-3 sm:w-4 sm:h-4" />
             Print
           </button>
@@ -258,7 +297,6 @@ const OrdersPage = () => {
             </div>
           </div>
           <div className="text-lg sm:text-2xl font-bold text-orange-600 mt-1">₹{Math.round(stats.revenue * 83).toLocaleString()}</div>
-          <div className="text-[10px] sm:text-xs text-green-600">+12.5% growth</div>
         </div>
         
         <div className="bg-white p-3 sm:p-4 rounded-xl shadow-sm border border-gray-200">
@@ -285,6 +323,14 @@ const OrdersPage = () => {
               onChange={(e) => setSearch(e.target.value)}
               className="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
             />
+            {search && (
+              <button
+                onClick={() => setSearch('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              >
+                <FaTimes className="w-4 h-4" />
+              </button>
+            )}
           </div>
           <select
             value={statusFilter}
@@ -323,53 +369,55 @@ const OrdersPage = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {filteredOrders.map((order) => {
-                const statusConfig = getStatusConfig(order.status)
-                return (
-                  <tr key={order.id} className="hover:bg-purple-50/30 transition-colors group">
-                    <td className="px-3 sm:px-6 py-3 text-xs sm:text-sm font-medium text-purple-600">
-                      {order.id}
-                    </td>
-                    <td className="px-3 sm:px-6 py-3 text-xs sm:text-sm text-gray-900 hidden sm:table-cell">
-                      {order.customer}
-                    </td>
-                    <td className="px-3 sm:px-6 py-3 text-xs sm:text-sm text-gray-500 hidden md:table-cell">
-                      {order.date}
-                    </td>
-                    <td className="px-3 sm:px-6 py-3 text-xs sm:text-sm font-semibold text-gray-900 text-right">
-                      ₹{Math.round(order.total * 83).toLocaleString()}
-                    </td>
-                    <td className="px-3 sm:px-6 py-3">
-                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 sm:px-3 sm:py-1 rounded-full text-[10px] sm:text-xs font-medium ${statusConfig.className}`}>
-                        {statusConfig.icon}
-                        <span className="hidden sm:inline">{statusConfig.label}</span>
-                      </span>
-                    </td>
-                    <td className="px-3 sm:px-6 py-3 text-xs sm:text-sm text-gray-500 hidden lg:table-cell">
-                      {order.paymentMethod}
-                    </td>
-                    <td className="px-3 sm:px-6 py-3 text-center">
-                      <button
-                        onClick={() => setSelectedOrder(order)}
-                        className="p-1.5 sm:p-2 hover:bg-purple-100 rounded-lg transition-colors text-gray-500 hover:text-purple-600"
-                      >
-                        <FaEye className="w-4 h-4" />
-                      </button>
-                    </td>
-                  </tr>
-                )
-              })}
+              {filteredOrders.length === 0 ? (
+                <tr>
+                  <td colSpan="7" className="text-center py-12 text-gray-500">
+                    <div className="text-4xl mb-2">📦</div>
+                    <p>No orders found</p>
+                    <p className="text-xs">Try adjusting your filters</p>
+                  </td>
+                </tr>
+              ) : (
+                filteredOrders.map((order) => {
+                  const statusConfig = getStatusConfig(order.status)
+                  return (
+                    <tr key={order.id} className="hover:bg-purple-50/30 transition-colors group">
+                      <td className="px-3 sm:px-6 py-3 text-xs sm:text-sm font-medium text-purple-600">
+                        {order.id}
+                      </td>
+                      <td className="px-3 sm:px-6 py-3 text-xs sm:text-sm text-gray-900 hidden sm:table-cell">
+                        {order.customer}
+                      </td>
+                      <td className="px-3 sm:px-6 py-3 text-xs sm:text-sm text-gray-500 hidden md:table-cell">
+                        {order.date}
+                      </td>
+                      <td className="px-3 sm:px-6 py-3 text-xs sm:text-sm font-semibold text-gray-900 text-right">
+                        ₹{Math.round(order.total * 83).toLocaleString()}
+                      </td>
+                      <td className="px-3 sm:px-6 py-3">
+                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 sm:px-3 sm:py-1 rounded-full text-[10px] sm:text-xs font-medium ${statusConfig.className}`}>
+                          {statusConfig.icon}
+                          <span className="hidden sm:inline">{statusConfig.label}</span>
+                        </span>
+                      </td>
+                      <td className="px-3 sm:px-6 py-3 text-xs sm:text-sm text-gray-500 hidden lg:table-cell">
+                        {order.paymentMethod}
+                      </td>
+                      <td className="px-3 sm:px-6 py-3 text-center">
+                        <button
+                          onClick={() => setSelectedOrder(order)}
+                          className="p-1.5 sm:p-2 hover:bg-purple-100 rounded-lg transition-colors text-gray-500 hover:text-purple-600"
+                        >
+                          <FaEye className="w-4 h-4" />
+                        </button>
+                      </td>
+                    </tr>
+                  )
+                })
+              )}
             </tbody>
           </table>
         </div>
-        
-        {filteredOrders.length === 0 && (
-          <div className="text-center py-16">
-            <div className="text-5xl mb-4">📦</div>
-            <h3 className="text-lg font-semibold text-gray-900">No orders found</h3>
-            <p className="text-sm text-gray-500">Try adjusting your filters</p>
-          </div>
-        )}
       </div>
 
       {/* Order Detail Modal */}
@@ -386,7 +434,7 @@ const OrdersPage = () => {
                   onClick={() => setSelectedOrder(null)}
                   className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-gray-500"
                 >
-                  <FaTimesCircle className="w-5 h-5" />
+                  <FaTimes className="w-5 h-5" />
                 </button>
               </div>
 
@@ -394,7 +442,6 @@ const OrdersPage = () => {
                 <div>
                   <div className="text-xs text-gray-500">Customer</div>
                   <div className="font-semibold text-gray-900 text-sm sm:text-base">{selectedOrder.customer}</div>
-                  <div className="text-xs text-gray-500 truncate">{selectedOrder.customerEmail}</div>
                 </div>
                 <div>
                   <div className="text-xs text-gray-500">Payment Method</div>
@@ -454,7 +501,10 @@ const OrdersPage = () => {
                 >
                   Close
                 </button>
-                <button className="flex-1 px-4 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-xl hover:shadow-lg transition-all font-medium text-sm">
+                <button 
+                  onClick={handlePrint}
+                  className="flex-1 px-4 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-xl hover:shadow-lg transition-all font-medium text-sm"
+                >
                   Print Invoice
                 </button>
               </div>

@@ -1,14 +1,16 @@
 import React, { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import axios from 'axios'
-import { FaStar, FaStarHalfAlt, FaRegStar, FaShoppingCart, FaHeart, FaArrowLeft } from 'react-icons/fa'
+import { FaStar, FaStarHalfAlt, FaRegStar, FaHeart, FaArrowLeft, FaCheck } from 'react-icons/fa'
 import toast from 'react-hot-toast'
 import Breadcrumb from '../components/Common/Breadcrumb'
 import LoadingSpinner from '../components/Common/LoadingSpinner'
+import { useAuth } from '../context/AuthContext'
 
 const ProductDetailPage = () => {
   const { id } = useParams()
   const navigate = useNavigate()
+  const { isAdmin } = useAuth()
   const [product, setProduct] = useState(null)
   const [loading, setLoading] = useState(true)
   const [selectedImage, setSelectedImage] = useState(0)
@@ -26,7 +28,16 @@ const ProductDetailPage = () => {
       try {
         setLoading(true)
         const response = await axios.get(`https://dummyjson.com/products/${id}`)
-        setProduct(response.data)
+        const data = { ...response.data, published: true }
+        
+        // Check if user can view this product
+        if (!isAdmin && !data.published) {
+          toast.error('This product is not available')
+          navigate('/products')
+          return
+        }
+        
+        setProduct(data)
       } catch (error) {
         console.error('Failed to fetch product:', error)
         toast.error('Failed to load product')
@@ -36,10 +47,12 @@ const ProductDetailPage = () => {
       }
     }
     fetchProduct()
-  }, [id, navigate])
+  }, [id, isAdmin, navigate])
 
+  // Toggle wishlist - FIXED: Only one toast message
   const toggleWishlist = () => {
     if (!product) return
+    
     setWishlist(prev => {
       const exists = prev.includes(product.id)
       const newWishlist = exists 
@@ -48,11 +61,8 @@ const ProductDetailPage = () => {
       
       localStorage.setItem('omega_wishlist', JSON.stringify(newWishlist))
       
-      if (!exists) {
-        toast.success('❤️ Added to wishlist!')
-      } else {
-        toast.success('Removed from wishlist')
-      }
+      // Single toast message - FIXED
+      toast.success(exists ? 'Removed from wishlist' : '❤️ Added to wishlist!')
       
       return newWishlist
     })
@@ -92,7 +102,7 @@ const ProductDetailPage = () => {
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 p-4 sm:p-6">
-          {/* Images Section - Responsive */}
+          {/* Images Section */}
           <div>
             {/* Main Image */}
             <div className="bg-gray-50 rounded-xl p-2 sm:p-4 h-64 sm:h-80 md:h-96 flex items-center justify-center border border-gray-200">
@@ -103,7 +113,7 @@ const ProductDetailPage = () => {
               />
             </div>
             
-            {/* Thumbnails - Responsive */}
+            {/* Thumbnails */}
             <div className="flex gap-1 sm:gap-2 mt-2 sm:mt-3 overflow-x-auto pb-2">
               {images.map((img, idx) => (
                 <div 
@@ -119,7 +129,7 @@ const ProductDetailPage = () => {
             </div>
           </div>
 
-          {/* Product Info - Responsive */}
+          {/* Product Info */}
           <div className="space-y-3 sm:space-y-4">
             <h1 className="text-xl sm:text-2xl font-bold text-gray-900">{product.title}</h1>
             
@@ -181,33 +191,18 @@ const ProductDetailPage = () => {
               </div>
             </div>
 
-            {/* Actions */}
+            {/* Actions - Only Wishlist */}
             <div className="flex flex-wrap gap-2 sm:gap-3 pt-2">
               <button 
-                className={`flex-1 flex items-center justify-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl font-semibold transition ${
-                  inStock 
-                    ? 'bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white shadow-lg shadow-orange-200' 
-                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                }`}
-                disabled={!inStock}
-              >
-                <FaShoppingCart className="w-4 h-4 sm:w-5 sm:h-5" />
-                {inStock ? 'Add to Cart' : 'Out of Stock'}
-              </button>
-              
-              <button className="flex-1 flex items-center justify-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-semibold transition shadow-lg shadow-purple-200">
-                Buy Now
-              </button>
-              
-              <button 
                 onClick={toggleWishlist}
-                className={`p-2.5 sm:p-3 border border-gray-300 rounded-xl hover:bg-gray-50 transition ${
-                  wishlist.includes(product.id) ? 'bg-red-50 border-red-200' : ''
+                className={`flex-1 flex items-center justify-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl font-semibold transition ${
+                  wishlist.includes(product.id)
+                    ? 'bg-red-50 text-red-600 border border-red-200'
+                    : 'bg-purple-600 text-white hover:bg-purple-700 shadow-lg shadow-purple-200'
                 }`}
               >
-                <FaHeart className={`w-4 h-4 sm:w-5 sm:h-5 ${
-                  wishlist.includes(product.id) ? 'text-red-500 fill-current' : 'text-gray-400'
-                }`} />
+                <FaHeart className={`w-4 h-4 sm:w-5 sm:h-5 ${wishlist.includes(product.id) ? 'fill-current' : ''}`} />
+                {wishlist.includes(product.id) ? 'In Wishlist' : 'Add to Wishlist'}
               </button>
             </div>
 
@@ -215,7 +210,7 @@ const ProductDetailPage = () => {
             {inStock && (
               <div className="p-3 bg-gray-50 rounded-xl border border-gray-200">
                 <div className="flex items-center gap-2 text-sm">
-                  <span className="text-green-600 text-lg">✓</span>
+                  <FaCheck className="text-green-600 text-lg" />
                   <span className="text-gray-600">
                     Free delivery by <span className="font-medium text-gray-900">
                       {new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toLocaleDateString()}

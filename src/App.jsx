@@ -7,7 +7,7 @@ import ProtectedRoute from './components/Common/ProtectedRoute'
 import LoadingSpinner from './components/Common/LoadingSpinner'
 import NotFoundPage from './pages/NotFoundPage'
 
-// Lazy load pages
+// Lazy load pages for performance
 const ProductsPage = lazy(() => import('./pages/ProductsPage'))
 const ProductDetailPage = lazy(() => import('./pages/ProductDetailPage'))
 const AnalyticsPage = lazy(() => import('./pages/AnalyticsPage'))
@@ -16,10 +16,12 @@ const CustomersPage = lazy(() => import('./pages/CustomersPage'))
 const OrdersPage = lazy(() => import('./pages/OrdersPage'))
 const MyOrdersPage = lazy(() => import('./pages/MyOrdersPage'))
 const UserProfilePage = lazy(() => import('./pages/UserProfilePage'))
+const WishlistPage = lazy(() => import('./pages/WishlistPage'))
 
 function App() {
   return (
     <>
+      {/* Toast Notifications */}
       <Toaster
         position="top-right"
         toastOptions={{
@@ -47,10 +49,13 @@ function App() {
       />
       
       <Routes>
+        {/* Public Routes */}
         <Route path="/login" element={<Login />} />
         <Route path="/" element={<Navigate to="/login" />} />
         
+        {/* Protected Routes - Requires Authentication */}
         <Route element={<Layout />}>
+          {/* Both Admin & User can access */}
           <Route
             path="/products"
             element={
@@ -102,6 +107,18 @@ function App() {
             }
           />
           <Route
+            path="/wishlist"
+            element={
+              <ProtectedRoute>
+                <Suspense fallback={<LoadingSpinner />}>
+                  <WishlistPage />
+                </Suspense>
+              </ProtectedRoute>
+            }
+          />
+          
+          {/* Admin Only Routes */}
+          <Route
             path="/analytics"
             element={
               <ProtectedRoute requiredRole="admin">
@@ -131,6 +148,8 @@ function App() {
               </ProtectedRoute>
             }
           />
+          
+          {/* 404 - Not Found */}
           <Route path="*" element={<NotFoundPage />} />
         </Route>
       </Routes>

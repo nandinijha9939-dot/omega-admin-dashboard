@@ -8,6 +8,7 @@ import CountUp from 'react-countup'
 import ProductSkeleton from '../components/Common/ProductSkeleton'
 import EmptyState from '../components/Common/EmptyState'
 import Breadcrumb from '../components/Common/Breadcrumb'
+import MultiCategoryFilter from '../components/Products/MultiCategoryFilter'
 
 const ProductsPage = () => {
   const [products, setProducts] = useState([])
@@ -16,6 +17,7 @@ const ProductsPage = () => {
   const { isAdmin } = useAuth()
   const navigate = useNavigate()
 
+  // Wishlist state - saved in localStorage
   const [wishlist, setWishlist] = useState(() => {
     try {
       const saved = localStorage.getItem('omega_wishlist')
@@ -25,15 +27,18 @@ const ProductsPage = () => {
     }
   })
 
+  // Get filters from URL
   const initialSearch = searchParams.get('search') || ''
   const initialCategory = searchParams.get('category') || ''
+  const initialSort = searchParams.get('sort') || 'popular'
 
   const [search, setSearch] = useState(initialSearch)
   const [category, setCategory] = useState(initialCategory)
-  const [sortBy, setSortBy] = useState('popular')
+  const [sortBy, setSortBy] = useState(initialSort)
   const [currentPage, setCurrentPage] = useState(1)
   const pageSize = 12
 
+  // Fetch products
   useEffect(() => {
     const fetchProducts = async () => {
       try {
@@ -54,8 +59,16 @@ const ProductsPage = () => {
     fetchProducts()
   }, [])
 
+  // Toggle wishlist - FIXED: Only one toast with a flag to prevent duplicate
   const toggleWishlist = useCallback((productId, e) => {
-    e.stopPropagation()
+    if (e) {
+      e.stopPropagation()
+      e.preventDefault()
+    }
+    
+    // Use a ref to track if toast was already shown
+    let toastShown = false
+    
     setWishlist(prev => {
       const exists = prev.includes(productId)
       const newWishlist = exists 
@@ -64,20 +77,22 @@ const ProductsPage = () => {
       
       localStorage.setItem('omega_wishlist', JSON.stringify(newWishlist))
       
-      if (!exists) {
-        toast.success('❤️ Added to wishlist!')
-      } else {
-        toast.success('Removed from wishlist')
+      // Only show toast if not already shown
+      if (!toastShown) {
+        toastShown = true
+        toast.success(exists ? 'Removed from wishlist' : '❤️ Added to wishlist!')
       }
       
       return newWishlist
     })
   }, [])
 
+  // Sync search from URL
   useEffect(() => {
     const params = new URLSearchParams(searchParams)
     const searchFromURL = params.get('search') || ''
     const categoryFromURL = params.get('category') || ''
+    const sortFromURL = params.get('sort') || 'popular'
     
     if (searchFromURL !== search) {
       setSearch(searchFromURL)
@@ -85,8 +100,12 @@ const ProductsPage = () => {
     if (categoryFromURL !== category) {
       setCategory(categoryFromURL)
     }
+    if (sortFromURL !== sortBy) {
+      setSortBy(sortFromURL)
+    }
   }, [searchParams])
 
+  // Filter and sort products
   const filtered = useMemo(() => {
     let result = [...products]
     
@@ -103,21 +122,31 @@ const ProductsPage = () => {
     }
     
     if (category) {
-      result = result.filter(p => p.category.toLowerCase() === category.toLowerCase())
+      const selectedCategories = category.split(',').filter(Boolean)
+      result = result.filter(p => selectedCategories.includes(p.category))
     }
     
     switch(sortBy) {
       case 'popular':
         result.sort((a, b) => b.rating - a.rating)
         break
-      case 'price-low':
+      case 'title-asc':
+        result.sort((a, b) => a.title.localeCompare(b.title))
+        break
+      case 'title-desc':
+        result.sort((a, b) => b.title.localeCompare(a.title))
+        break
+      case 'price-asc':
         result.sort((a, b) => a.price - b.price)
         break
-      case 'price-high':
+      case 'price-desc':
         result.sort((a, b) => b.price - a.price)
         break
-      case 'newest':
-        result.sort((a, b) => b.id - a.id)
+      case 'rating-desc':
+        result.sort((a, b) => b.rating - a.rating)
+        break
+      case 'rating-asc':
+        result.sort((a, b) => a.rating - b.rating)
         break
       default:
         break
@@ -126,24 +155,27 @@ const ProductsPage = () => {
     return result
   }, [products, search, category, sortBy, isAdmin])
 
+  // Update URL when filters change
   useEffect(() => {
     const timeoutId = setTimeout(() => {
       const params = new URLSearchParams()
       if (search) params.set('search', search)
       if (category) params.set('category', category)
+      if (sortBy && sortBy !== 'popular') params.set('sort', sortBy)
       if (currentPage > 1) params.set('page', currentPage)
       
       const currentParams = new URLSearchParams(window.location.search)
       const currentSearch = currentParams.get('search') || ''
       const currentCategory = currentParams.get('category') || ''
+      const currentSort = currentParams.get('sort') || 'popular'
       
-      if (search !== currentSearch || category !== currentCategory) {
+      if (search !== currentSearch || category !== currentCategory || sortBy !== currentSort) {
         setSearchParams(params, { replace: true })
       }
     }, 300)
 
     return () => clearTimeout(timeoutId)
-  }, [search, category, currentPage, setSearchParams])
+  }, [search, category, sortBy, currentPage, setSearchParams])
 
   const totalPages = Math.ceil(filtered.length / pageSize)
   const paginatedProducts = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize)
@@ -205,7 +237,7 @@ const ProductsPage = () => {
 
   if (loading) {
     return (
-      <div className="px-3 sm:px-4 md:px-6">
+      <div className="w-full px-2 sm:px-4 md:px-6">
         <Breadcrumb />
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 sm:gap-3 md:gap-4">
           {[...Array(8)].map((_, i) => (
@@ -217,10 +249,9 @@ const ProductsPage = () => {
   }
 
   return (
-    <div className="px-3 sm:px-4 md:px-6 lg:px-8">
+    <div className="w-full px-2 sm:px-4 md:px-6 lg:px-8">
       <Breadcrumb />
 
-      {/* Admin Stats */}
       {isAdmin && (
         <div className="grid grid-cols-2 md:grid-cols-3 gap-2 sm:gap-4 mb-4 sm:mb-6">
           <div className="bg-white p-3 sm:p-4 rounded-xl shadow-sm border border-gray-200">
@@ -244,7 +275,6 @@ const ProductsPage = () => {
         </div>
       )}
 
-      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4 mb-3 sm:mb-6">
         <div>
           <h1 className="text-lg sm:text-2xl font-bold text-gray-900 flex items-center gap-2">
@@ -255,7 +285,7 @@ const ProductsPage = () => {
           </h1>
           <p className="text-xs sm:text-sm text-gray-500 mt-0.5">
             {filtered.length} products available
-            {category && <span className="text-purple-600 font-medium"> in {category}</span>}
+            {category && <span className="text-purple-600 font-medium"> in selected categories</span>}
           </p>
         </div>
         {isAdmin && (
@@ -267,7 +297,6 @@ const ProductsPage = () => {
         )}
       </div>
 
-      {/* Filters */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-3 sm:p-4 mb-4 sm:mb-6">
         <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
           <div className="flex-1 min-w-0">
@@ -286,26 +315,32 @@ const ProductsPage = () => {
           </div>
           
           <div className="flex gap-2">
-            <select
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-              className="flex-1 sm:flex-none px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 bg-white min-w-[100px] sm:min-w-[140px]"
-            >
-              <option value="">All Categories</option>
-              {categories.map(c => (
-                <option key={c} value={c}>{c}</option>
-              ))}
-            </select>
+            <div className="flex-1 sm:flex-none min-w-[120px] sm:min-w-[160px]">
+              <MultiCategoryFilter
+                categories={categories}
+                selectedCategories={category.split(',').filter(Boolean)}
+                onChange={(selected) => {
+                  setCategory(selected.join(','))
+                  setCurrentPage(1)
+                }}
+              />
+            </div>
             
             <select
               value={sortBy}
-              onChange={(e) => setSortBy(e.target.value)}
+              onChange={(e) => {
+                setSortBy(e.target.value)
+                setCurrentPage(1)
+              }}
               className="flex-1 sm:flex-none px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 bg-white min-w-[80px] sm:min-w-[140px]"
             >
               <option value="popular">Popular</option>
-              <option value="price-low">Price ↑</option>
-              <option value="price-high">Price ↓</option>
-              <option value="newest">Newest</option>
+              <option value="title-asc">Name: A to Z</option>
+              <option value="title-desc">Name: Z to A</option>
+              <option value="price-asc">Price: Low to High</option>
+              <option value="price-desc">Price: High to Low</option>
+              <option value="rating-desc">Rating: High to Low</option>
+              <option value="rating-asc">Rating: Low to High</option>
             </select>
             
             <button
@@ -316,9 +351,31 @@ const ProductsPage = () => {
             </button>
           </div>
         </div>
+        
+        {category && (
+          <div className="flex flex-wrap gap-1 mt-2 pt-2 border-t border-gray-100">
+            {category.split(',').filter(Boolean).map(cat => (
+              <span
+                key={cat}
+                className="inline-flex items-center gap-1 px-2 py-0.5 bg-purple-100 text-purple-700 rounded-full text-xs"
+              >
+                {cat}
+                <button
+                  onClick={() => {
+                    const newCategories = category.split(',').filter(c => c !== cat).join(',')
+                    setCategory(newCategories)
+                    setCurrentPage(1)
+                  }}
+                  className="hover:text-purple-900"
+                >
+                  ✕
+                </button>
+              </span>
+            ))}
+          </div>
+        )}
       </div>
 
-      {/* Product Grid */}
       {paginatedProducts.length === 0 ? (
         <EmptyState 
           icon="🔍"
@@ -343,13 +400,18 @@ const ProductsPage = () => {
                     className="max-h-full max-w-full object-contain group-hover:scale-105 transition-transform duration-300"
                   />
                   
+                  {/* Wishlist Button - FIXED */}
                   <button 
                     className={`absolute top-1 right-1 sm:top-2 sm:right-2 p-1.5 sm:p-2 bg-white rounded-full shadow-md transition-all ${
                       wishlist.includes(product.id) 
                         ? 'opacity-100 scale-110' 
                         : 'opacity-0 group-hover:opacity-100'
                     } hover:bg-red-50`}
-                    onClick={(e) => toggleWishlist(product.id, e)}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      e.preventDefault()
+                      toggleWishlist(product.id)
+                    }}
                   >
                     <FaHeart className={`w-3 h-3 sm:w-4 sm:h-4 transition ${
                       wishlist.includes(product.id) ? 'text-red-500 fill-current' : 'text-gray-400'
@@ -416,7 +478,6 @@ const ProductsPage = () => {
             ))}
           </div>
 
-          {/* Pagination */}
           {totalPages > 1 && (
             <div className="mt-4 sm:mt-6 flex flex-col sm:flex-row items-center justify-between gap-3">
               <div className="text-[10px] sm:text-sm text-gray-500 order-2 sm:order-1">
